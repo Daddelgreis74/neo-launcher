@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">Neo Launcher</string>
+    <string name="search_apps_hint">Buscar aplicaciones…</string>
+    <string name="search_web">Buscar en la web \"%1$s\"</string>
+    <string name="launcher_settings">Ajustes del iniciador</string>
+    <string name="homescreen">Pantalla de inicio</string>
+    <string name="app_drawer">Cajón de aplicaciones</string>
+    <string name="language">Idioma</string>
+    <string name="select_language">Seleccionar idioma</string>
+    <string name="system_default">Predeterminado del sistema</string>
+    <string name="grid_size">Tamaño de cuadrícula</string>
+    <string name="dock_apps">Aplicaciones del dock</string>
+    <string name="icon_pack">Paquete de iconos</string>
+    <string name="default_icons">Iconos del sistema predeterminados</string>
+    <string name="change_wallpaper">Cambiar fondo de pantalla</string>
+    <string name="app_info">Información de la aplicación</string>
+    <string name="uninstall">Desinstalar</string>
+    <string name="remove_from_home">Quitar del inicio</string>
+    <string name="edit_folder">Editar carpeta</string>
+    <string name="folder_name_hint">Nombre de la carpeta</string>
+    <string name="add_widget">Añadir widget</string>
+    <string name="no_apps_found">No se encontraron aplicaciones</string>
+    <string name="permissions_required">Se necesitan permisos para listar aplicaciones</string>
+    <string name="edge_to_edge_mode">Pantalla completa borde a borde</string>
+    <string name="theme_mode">Tema</string>
+    <string name="theme_system">Sistema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Oscuro</string>
+</resources>
