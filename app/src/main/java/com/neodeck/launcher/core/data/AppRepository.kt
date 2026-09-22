@@ -11,6 +11,7 @@ import android.os.Looper
 import android.os.Process
 import android.os.UserHandle
 import android.os.UserManager
+import com.neodeck.launcher.core.iconpack.IconPackManager
 import com.neodeck.launcher.core.model.AppItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +22,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 
-class AppRepository(private val context: Context) {
+class AppRepository(
+    private val context: Context,
+    val iconPackManager: IconPackManager = IconPackManager(context)
+) {
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
@@ -87,9 +91,22 @@ class AppRepository(private val context: Context) {
         }
     }
 
+    fun applyIconPack(iconPackPackage: String?) {
+        iconPackManager.applyIconPack(iconPackPackage)
+        iconCache.clear()
+        reloadApps()
+    }
+
     fun getAppIcon(app: AppItem): Drawable? {
         val cacheKey = "${app.packageName}/${app.activityName}/${app.userHandle?.hashCode() ?: 0}"
         iconCache[cacheKey]?.let { return it }
+
+        // Check active icon pack first
+        val iconPackDrawable = iconPackManager.getIconForApp(app)
+        if (iconPackDrawable != null) {
+            iconCache[cacheKey] = iconPackDrawable
+            return iconPackDrawable
+        }
 
         return try {
             val user = app.userHandle ?: Process.myUserHandle()

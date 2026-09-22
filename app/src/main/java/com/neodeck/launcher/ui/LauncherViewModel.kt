@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.neodeck.launcher.core.data.AppRepository
 import com.neodeck.launcher.core.data.GridRepository
 import com.neodeck.launcher.core.data.LauncherPreferences
+import com.neodeck.launcher.core.haptic.HapticHelper
+import com.neodeck.launcher.core.iconpack.IconPackInfo
 import com.neodeck.launcher.core.model.AppGridItem
 import com.neodeck.launcher.core.model.AppItem
 import com.neodeck.launcher.core.model.FolderGridItem
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 class LauncherViewModel(application: Application) : AndroidViewModel(application) {
@@ -26,6 +29,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     val appRepository = AppRepository(application)
     val preferences = LauncherPreferences(application)
     val gridRepository = GridRepository(application, appRepository)
+    val hapticHelper = HapticHelper(application)
 
     val allApps: StateFlow<List<AppItem>> = appRepository.apps
     val settings: StateFlow<LauncherSettings> = preferences.settings
@@ -41,17 +45,67 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private val _isSettingsOpen = MutableStateFlow(false)
     val isSettingsOpen: StateFlow<Boolean> = _isSettingsOpen.asStateFlow()
 
+    private val _isSmartHomeOpen = MutableStateFlow(false)
+    val isSmartHomeOpen: StateFlow<Boolean> = _isSmartHomeOpen.asStateFlow()
+
     private val _activeFolder = MutableStateFlow<FolderGridItem?>(null)
     val activeFolder: StateFlow<FolderGridItem?> = _activeFolder.asStateFlow()
 
-    val filteredApps: StateFlow<List<AppItem>> = combine(allApps, searchQuery) { apps, query ->
-        if (query.isBlank()) {
+    private val _selectedDrawerTab = MutableStateFlow(0) // 0: All, 1: Favorites
+    val selectedDrawerTab: StateFlow<Int> = _selectedDrawerTab.asStateFlow()
+
+    private val _availableIconPacks = MutableStateFlow<List<IconPackInfo>>(emptyList())
+    val availableIconPacks: StateFlow<List<IconPackInfo>> = _availableIconPacks.asStateFlow()
+
+    init {
+        // Load icon pack if configured
+        viewModelScope.launch {
+            preferences.settings.collect { currentSettings ->
+                appRepository.applyIconPack(currentSettings.iconPackPackage)
+            }
+        }
+        loadInstalledIconPacks()
+    }
+
+    fun loadInstalledIconPacks() {
+        viewModelScope.launch {
+            _availableIconPacks.value = appRepository.iconPackManager.getInstalledIconPacks()
+        }
+    }
+
+    val filteredApps: StateFlow<List<AppItem>> = combine(
+        allApps,
+        searchQuery,
+        settings,
+        selectedDrawerTab,
+        dockItems
+    ) { apps, query, currentSettings, tab, currentDock ->
+        // Filter out hidden apps unless searching
+        val nonHidden = if (query.isBlank()) {
+            apps.filter { it.packageName !in currentSettings.hiddenApps }
+        } else {
             apps
+        }
+
+        val tabFiltered = if (tab == 1 && query.isBlank()) {
+            // Favorites tab shows dock apps and first page apps
+            (currentDock + nonHidden.take(8)).distinctBy { it.packageName }
+        } else {
+            nonHidden
+        }
+
+        if (query.isBlank()) {
+            tabFiltered
         } else {
             val q = query.trim().lowercase()
-            apps.filter { it.label.lowercase().contains(q) || it.packageName.lowercase().contains(q) }
+            tabFiltered.filter { it.label.lowercase().contains(q) || it.packageName.lowercase().contains(q) }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun selectDrawerTab(tab: Int) {
+        _selectedDrawerTab.value = tab
+        triggerHapticTick()
+    }
 
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
@@ -59,6 +113,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun openDrawer() {
         _isDrawerOpen.value = true
+        triggerHapticClick()
     }
 
     fun closeDrawer() {
@@ -68,14 +123,25 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun openSettings() {
         _isSettingsOpen.value = true
+        triggerHapticClick()
     }
 
     fun closeSettings() {
         _isSettingsOpen.value = false
     }
 
+    fun openSmartHome() {
+        _isSmartHomeOpen.value = true
+        triggerHapticClick()
+    }
+
+    fun closeSmartHome() {
+        _isSmartHomeOpen.value = false
+    }
+
     fun openFolder(folder: FolderGridItem) {
         _activeFolder.value = folder
+        triggerHapticClick()
     }
 
     fun closeFolder() {
@@ -83,6 +149,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun launchApp(app: AppItem) {
+        triggerHapticClick()
         appRepository.launchApp(app)
         closeDrawer()
         closeFolder()
@@ -96,12 +163,21 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         appRepository.uninstallApp(app)
     }
 
+    fun hideApp(app: AppItem) {
+        preferences.hideApp(app.packageName)
+        triggerHapticClick()
+    }
+
+    fun unhideApp(packageName: String) {
+        preferences.unhideApp(packageName)
+        triggerHapticClick()
+    }
+
     fun addAppToHome(app: AppItem, page: Int = 0) {
         val currentItems = gridItems.value.filter { it.page == page }
         val maxRows = settings.value.gridRows
         val maxCols = settings.value.gridCols
 
-        // Find first empty cell
         for (r in 0 until maxRows) {
             for (c in 0 until maxCols) {
                 val occupied = currentItems.any { it.row == r && it.col == c }
@@ -114,22 +190,45 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                         app = app
                     )
                     gridRepository.addItemToGrid(item)
+                    triggerHapticClick()
                     return
                 }
             }
         }
     }
 
+    fun addWidgetToHome(appWidgetId: Int, page: Int = 0, spanX: Int = 2, spanY: Int = 2) {
+        val item = WidgetGridItem(
+            id = UUID.randomUUID().toString(),
+            page = page,
+            row = 1,
+            col = 0,
+            appWidgetId = appWidgetId,
+            spanX = spanX,
+            spanY = spanY
+        )
+        gridRepository.addItemToGrid(item)
+        triggerHapticClick()
+    }
+
     fun removeGridItem(id: String) {
         gridRepository.removeItemFromGrid(id)
+        triggerHapticClick()
+    }
+
+    fun moveGridItem(id: String, newPage: Int, newRow: Int, newCol: Int) {
+        gridRepository.moveItem(id, newPage, newRow, newCol)
+        triggerHapticTick()
     }
 
     fun addAppToDock(app: AppItem) {
         gridRepository.addAppToDock(app)
+        triggerHapticClick()
     }
 
     fun removeAppFromDock(app: AppItem) {
         gridRepository.removeAppFromDock(app)
+        triggerHapticClick()
     }
 
     fun updateGridSize(rows: Int, cols: Int) {
@@ -142,5 +241,35 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun updateLanguage(code: String) {
         preferences.updateLanguage(code)
+    }
+
+    fun updateIconPack(packageName: String?) {
+        preferences.updateIconPack(packageName)
+        triggerHapticClick()
+    }
+
+    fun updateSmartHomeSettings(enabled: Boolean, url: String) {
+        preferences.updateSmartHome(enabled, url)
+    }
+
+    fun updateWallpaper(wallpaperKey: String) {
+        preferences.updateWallpaper(wallpaperKey)
+        triggerHapticClick()
+    }
+
+    fun updateHapticFeedback(enabled: Boolean) {
+        preferences.updateHapticFeedback(enabled)
+    }
+
+    fun triggerHapticClick() {
+        hapticHelper.performClick(settings.value.hapticFeedbackEnabled)
+    }
+
+    fun triggerHapticTick() {
+        hapticHelper.performTick(settings.value.hapticFeedbackEnabled)
+    }
+
+    fun triggerHapticHeavy() {
+        hapticHelper.performHeavyClick(settings.value.hapticFeedbackEnabled)
     }
 }

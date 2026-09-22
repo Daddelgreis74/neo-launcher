@@ -1,8 +1,9 @@
 package com.neodeck.launcher.ui.home
 
-import android.content.Intent
+import android.appwidget.AppWidgetManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -23,12 +24,14 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,7 +42,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -54,6 +56,9 @@ import com.neodeck.launcher.core.model.AppItem
 import com.neodeck.launcher.core.model.FolderGridItem
 import com.neodeck.launcher.core.model.GridItem
 import com.neodeck.launcher.core.model.LauncherSettings
+import com.neodeck.launcher.core.model.WidgetGridItem
+import com.neodeck.launcher.core.widget.AppWidgetContainer
+import com.neodeck.launcher.core.widget.LauncherWidgetHost
 import com.neodeck.launcher.ui.components.AppIconView
 
 @Composable
@@ -62,14 +67,17 @@ fun HomeScreen(
     dockItems: List<AppItem>,
     settings: LauncherSettings,
     appRepository: AppRepository,
+    widgetHost: LauncherWidgetHost? = null,
+    appWidgetManager: AppWidgetManager? = null,
     onAppClick: (AppItem) -> Unit,
     onFolderClick: (FolderGridItem) -> Unit,
     onRemoveGridItem: (String) -> Unit,
     onOpenDrawer: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenSmartHome: () -> Unit,
+    onAddWidgetClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 3 })
     var selectedItemForMenu by remember { mutableStateOf<GridItem?>(null) }
     var showEmptySpaceMenu by remember { mutableStateOf(false) }
@@ -94,10 +102,12 @@ fun HomeScreen(
         ) {
             Spacer(modifier = Modifier.height(12.dp))
 
-            // At-a-Glance Smart Bar
+            // At-a-Glance Smart Bar with SmartHome button
             SmartBar(
                 onSearchClick = onOpenDrawer,
                 onSettingsClick = onOpenSettings,
+                showSmartHome = settings.smartHomeEnabled,
+                onSmartHomeClick = onOpenSmartHome,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -124,10 +134,11 @@ fun HomeScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .clickable(
+                            .combinedClickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
-                                onClick = {}
+                                onClick = {},
+                                onLongClick = { showEmptySpaceMenu = true }
                             )
                     ) {
                         val pageItems = gridItems.filter { it.page == page }
@@ -135,11 +146,13 @@ fun HomeScreen(
                         pageItems.forEach { item ->
                             val xOffset = cellWidth * item.col
                             val yOffset = cellHeight * item.row
+                            val itemWidth = cellWidth * item.spanX
+                            val itemHeight = cellHeight * item.spanY
 
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
-                                    .size(cellWidth, cellHeight)
+                                    .size(itemWidth, itemHeight)
                                     .offset(x = xOffset, y = yOffset)
                             ) {
                                 when (item) {
@@ -188,7 +201,26 @@ fun HomeScreen(
                                             }
                                         }
                                     }
-                                    else -> {}
+                                    is WidgetGridItem -> {
+                                        if (widgetHost != null && appWidgetManager != null) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .padding(6.dp)
+                                                    .clip(RoundedCornerShape(16.dp))
+                                                    .combinedClickable(
+                                                        onClick = {},
+                                                        onLongClick = { selectedItemForMenu = item }
+                                                    )
+                                            ) {
+                                                AppWidgetContainer(
+                                                    appWidgetId = item.appWidgetId,
+                                                    widgetHost = widgetHost,
+                                                    appWidgetManager = appWidgetManager
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
 
                                 // Context Menu for grid items
@@ -222,6 +254,31 @@ fun HomeScreen(
                                         }
                                     }
                                 }
+                            }
+                        }
+
+                        // Long-Press Empty Space Menu
+                        if (showEmptySpaceMenu) {
+                            DropdownMenu(
+                                expanded = true,
+                                onDismissRequest = { showEmptySpaceMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    leadingIcon = { Icon(Icons.Default.Add, null) },
+                                    text = { Text(stringResource(R.string.add_widget)) },
+                                    onClick = {
+                                        showEmptySpaceMenu = false
+                                        onAddWidgetClick()
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    leadingIcon = { Icon(Icons.Default.Settings, null) },
+                                    text = { Text(stringResource(R.string.launcher_settings)) },
+                                    onClick = {
+                                        showEmptySpaceMenu = false
+                                        onOpenSettings()
+                                    }
+                                )
                             }
                         }
                     }

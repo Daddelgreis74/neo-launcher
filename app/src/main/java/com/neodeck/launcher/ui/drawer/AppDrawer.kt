@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -33,6 +34,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,8 +49,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.neodeck.launcher.R
 import com.neodeck.launcher.core.data.AppRepository
 import com.neodeck.launcher.core.model.AppItem
@@ -57,15 +64,17 @@ fun AppDrawer(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     appRepository: AppRepository,
+    selectedTab: Int = 0,
+    onTabSelect: (Int) -> Unit = {},
     onAppClick: (AppItem) -> Unit,
     onAddToHome: (AppItem) -> Unit,
+    onHideApp: (AppItem) -> Unit = {},
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     var selectedAppForMenu by remember { mutableStateOf<AppItem?>(null) }
 
-    // Predictive back / System back closes drawer
     BackHandler {
         onClose()
     }
@@ -157,6 +166,44 @@ fun AppDrawer(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
+            } else {
+                // Category Tabs (Alle / Favoriten)
+                Spacer(modifier = Modifier.height(8.dp))
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    indicator = { tabPositions ->
+                        SecondaryIndicator(
+                            Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Tab(
+                        selected = selectedTab == 0,
+                        onClick = { onTabSelect(0) },
+                        text = {
+                            Text(
+                                text = "Alle",
+                                fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 14.sp
+                            )
+                        }
+                    )
+                    Tab(
+                        selected = selectedTab == 1,
+                        onClick = { onTabSelect(1) },
+                        text = {
+                            Text(
+                                text = "Favoriten",
+                                fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 14.sp
+                            )
+                        }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -203,6 +250,13 @@ fun AppDrawer(
                                             onAddToHome(app)
                                             selectedAppForMenu = null
                                             onClose()
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("App verbergen") },
+                                        onClick = {
+                                            onHideApp(app)
+                                            selectedAppForMenu = null
                                         }
                                     )
                                     DropdownMenuItem(

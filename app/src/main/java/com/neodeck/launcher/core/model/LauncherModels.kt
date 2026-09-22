@@ -62,5 +62,11 @@ data class LauncherSettings(
     val dockCount: Int = 5,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val languageCode: String = "system",
-    val showAppLabels: Boolean = true
+    val showAppLabels: Boolean = true,
+    val iconPackPackage: String? = null,
+    val hiddenApps: Set<String> = emptySet(),
+    val smartHomeEnabled: Boolean = true,
+    val smartHomeUrl: String = "http://192.168.178.100:3000",
+    val selectedWallpaper: String = "aurora",
+    val hapticFeedbackEnabled: Boolean = true
 )

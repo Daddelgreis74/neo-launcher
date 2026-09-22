@@ -5,6 +5,7 @@ import com.neodeck.launcher.core.model.AppItem
 import com.neodeck.launcher.core.model.FolderGridItem
 import com.neodeck.launcher.core.model.LauncherSettings
 import com.neodeck.launcher.core.model.ThemeMode
+import com.neodeck.launcher.core.model.WidgetGridItem
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -38,6 +39,22 @@ class LauncherModelTest {
     }
 
     @Test
+    fun testWidgetGridItem() {
+        val widget = WidgetGridItem(
+            id = "w1",
+            page = 0,
+            row = 1,
+            col = 0,
+            appWidgetId = 42,
+            spanX = 3,
+            spanY = 2
+        )
+        assertEquals(42, widget.appWidgetId)
+        assertEquals(3, widget.spanX)
+        assertEquals(2, widget.spanY)
+    }
+
+    @Test
     fun testFolderContainsApps() {
         val app1 = AppItem("App 1", "com.app1", "com.app1.Main")
         val app2 = AppItem("App 2", "com.app2", "com.app2.Main")
@@ -60,5 +77,8 @@ class LauncherModelTest {
         assertEquals(5, settings.gridCols)
         assertEquals(ThemeMode.SYSTEM, settings.themeMode)
         assertTrue(settings.showAppLabels)
+        assertTrue(settings.smartHomeEnabled)
+        assertEquals("aurora", settings.selectedWallpaper)
+        assertTrue(settings.hapticFeedbackEnabled)
     }
 }

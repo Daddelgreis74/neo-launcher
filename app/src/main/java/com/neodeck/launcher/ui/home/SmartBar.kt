@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,6 +35,8 @@ import java.util.Locale
 fun SmartBar(
     onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    showSmartHome: Boolean = false,
+    onSmartHomeClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val dateText = remember {
@@ -74,6 +77,15 @@ fun SmartBar(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
+                if (showSmartHome && onSmartHomeClick != null) {
+                    IconButton(onClick = onSmartHomeClick) {
+                        Icon(
+                            imageVector = Icons.Default.Sensors,
+                            contentDescription = "SmartHome",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
                 IconButton(onClick = onSearchClick) {
                     Icon(
                         imageVector = Icons.Default.Search,
