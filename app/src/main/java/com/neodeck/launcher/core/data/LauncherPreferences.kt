@@ -40,8 +40,6 @@ class LauncherPreferences(private val context: Context) {
             showAppLabels = prefs.getBoolean("show_app_labels", true),
             iconPackPackage = prefs.getString("icon_pack_package", null),
             hiddenApps = hiddenSet,
-            smartHomeEnabled = prefs.getBoolean("smart_home_enabled", true),
-            smartHomeUrl = prefs.getString("smart_home_url", "http://192.168.178.100:3000") ?: "http://192.168.178.100:3000",
             selectedWallpaper = prefs.getString("selected_wallpaper", "aurora") ?: "aurora",
             hapticFeedbackEnabled = prefs.getBoolean("haptic_feedback_enabled", true)
         )
@@ -94,14 +92,6 @@ class LauncherPreferences(private val context: Context) {
         current.remove(packageName)
         prefs.edit {
             putStringSet("hidden_apps", current)
-        }
-        _settings.value = loadSettings()
-    }
-
-    fun updateSmartHome(enabled: Boolean, url: String) {
-        prefs.edit {
-            putBoolean("smart_home_enabled", enabled)
-            putString("smart_home_url", url)
         }
         _settings.value = loadSettings()
     }

@@ -45,9 +45,6 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private val _isSettingsOpen = MutableStateFlow(false)
     val isSettingsOpen: StateFlow<Boolean> = _isSettingsOpen.asStateFlow()
 
-    private val _isSmartHomeOpen = MutableStateFlow(false)
-    val isSmartHomeOpen: StateFlow<Boolean> = _isSmartHomeOpen.asStateFlow()
-
     private val _activeFolder = MutableStateFlow<FolderGridItem?>(null)
     val activeFolder: StateFlow<FolderGridItem?> = _activeFolder.asStateFlow()
 
@@ -135,15 +132,6 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun closeSettings() {
         _isSettingsOpen.value = false
-    }
-
-    fun openSmartHome() {
-        _isSmartHomeOpen.value = true
-        triggerHapticClick()
-    }
-
-    fun closeSmartHome() {
-        _isSmartHomeOpen.value = false
     }
 
     fun openFolder(folder: FolderGridItem) {
@@ -258,10 +246,6 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun updateIconPack(packageName: String?) {
         preferences.updateIconPack(packageName)
         triggerHapticClick()
-    }
-
-    fun updateSmartHomeSettings(enabled: Boolean, url: String) {
-        preferences.updateSmartHome(enabled, url)
     }
 
     fun updateWallpaper(wallpaperKey: String) {

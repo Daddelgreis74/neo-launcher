@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -37,7 +36,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -68,7 +66,6 @@ fun SettingsScreen(
     onUpdateLanguage: (String) -> Unit,
     onUpdateIconPack: (String?) -> Unit,
     onUpdateWallpaper: (String) -> Unit,
-    onUpdateSmartHome: (Boolean, String) -> Unit,
     onUpdateHaptics: (Boolean) -> Unit,
     onUnhideApp: (String) -> Unit,
     onClose: () -> Unit,
@@ -80,7 +77,6 @@ fun SettingsScreen(
     var showThemeDialog by remember { mutableStateOf(false) }
     var showWallpaperDialog by remember { mutableStateOf(false) }
     var showIconPackDialog by remember { mutableStateOf(false) }
-    var showSmartHomeDialog by remember { mutableStateOf(false) }
     var showHiddenAppsDialog by remember { mutableStateOf(false) }
 
     BackHandler {
@@ -203,12 +199,6 @@ fun SettingsScreen(
             ) {
                 Column {
                     SettingsItem(
-                        icon = Icons.Default.Sensors,
-                        title = "Neo Deck SmartHome Dashboard",
-                        subtitle = if (settings.smartHomeEnabled) settings.smartHomeUrl else "Deaktiviert",
-                        onClick = { showSmartHomeDialog = true }
-                    )
-                    SettingsItem(
                         icon = Icons.Default.VisibilityOff,
                         title = "Verborgene Apps",
                         subtitle = "${settings.hiddenApps.size} Apps ausgeblendet",
@@ -297,7 +287,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Version 2.0 (Widgets, Icon-Packs, SmartHome, Edge-to-Edge & Android 16 Ready)",
+                        text = "Version 2.0 (Widgets, Icon-Packs, Edge-to-Edge & Android 16 Ready)",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
@@ -407,50 +397,6 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(onClick = { showIconPackDialog = false }) {
                     Text("OK")
-                }
-            }
-        )
-    }
-
-    // SmartHome Dialog
-    if (showSmartHomeDialog) {
-        var enabled by remember { mutableStateOf(settings.smartHomeEnabled) }
-        var url by remember { mutableStateOf(settings.smartHomeUrl) }
-
-        AlertDialog(
-            onDismissRequest = { showSmartHomeDialog = false },
-            title = { Text("Neo Deck SmartHome Einstellungen") },
-            text = {
-                Column {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("SmartHome Panel aktivieren", style = MaterialTheme.typography.bodyLarge)
-                        Switch(checked = enabled, onCheckedChange = { enabled = it })
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = url,
-                        onValueChange = { url = it },
-                        label = { Text("Dashboard URL") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    onUpdateSmartHome(enabled, url)
-                    showSmartHomeDialog = false
-                }) {
-                    Text("Speichern")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showSmartHomeDialog = false }) {
-                    Text("Abbrechen")
                 }
             }
         )

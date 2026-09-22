@@ -76,7 +76,6 @@ fun HomeScreen(
     onRemoveGridItem: (String) -> Unit,
     onOpenDrawer: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenSmartHome: () -> Unit,
     onAddWidgetClick: () -> Unit,
     onPageChanged: (Int) -> Unit = {},
     modifier: Modifier = Modifier
@@ -109,12 +108,10 @@ fun HomeScreen(
         ) {
             Spacer(modifier = Modifier.height(12.dp))
 
-            // At-a-Glance Smart Bar with SmartHome button
+            // At-a-Glance Smart Bar
             SmartBar(
                 onSearchClick = onOpenDrawer,
                 onSettingsClick = onOpenSettings,
-                showSmartHome = settings.smartHomeEnabled,
-                onSmartHomeClick = onOpenSmartHome,
                 modifier = Modifier.fillMaxWidth()
             )
 

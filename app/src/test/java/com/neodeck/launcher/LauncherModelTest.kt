@@ -77,7 +77,6 @@ class LauncherModelTest {
         assertEquals(5, settings.gridCols)
         assertEquals(ThemeMode.SYSTEM, settings.themeMode)
         assertTrue(settings.showAppLabels)
-        assertTrue(settings.smartHomeEnabled)
         assertEquals("aurora", settings.selectedWallpaper)
         assertTrue(settings.hapticFeedbackEnabled)
     }

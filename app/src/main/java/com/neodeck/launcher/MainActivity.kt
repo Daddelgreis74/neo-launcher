@@ -13,9 +13,7 @@ import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -33,7 +31,6 @@ import com.neodeck.launcher.ui.folder.FolderDialog
 import com.neodeck.launcher.ui.home.HomeScreen
 import com.neodeck.launcher.ui.home.WallpaperBackground
 import com.neodeck.launcher.ui.settings.SettingsScreen
-import com.neodeck.launcher.ui.smarthome.SmartHomePanel
 import com.neodeck.launcher.ui.theme.NeoLauncherTheme
 
 class MainActivity : ComponentActivity() {
@@ -93,7 +90,6 @@ class MainActivity : ComponentActivity() {
             val searchQuery by viewModel.searchQuery.collectAsState()
             val isDrawerOpen by viewModel.isDrawerOpen.collectAsState()
             val isSettingsOpen by viewModel.isSettingsOpen.collectAsState()
-            val isSmartHomeOpen by viewModel.isSmartHomeOpen.collectAsState()
             val activeFolder by viewModel.activeFolder.collectAsState()
             val selectedDrawerTab by viewModel.selectedDrawerTab.collectAsState()
             val availableIconPacks by viewModel.availableIconPacks.collectAsState()
@@ -126,7 +122,6 @@ class MainActivity : ComponentActivity() {
                             onRemoveGridItem = { id -> viewModel.removeGridItem(id) },
                             onOpenDrawer = { viewModel.openDrawer() },
                             onOpenSettings = { viewModel.openSettings() },
-                            onOpenSmartHome = { viewModel.openSmartHome() },
                             onAddWidgetClick = { startWidgetPick() },
                             onPageChanged = { page -> viewModel.setCurrentScreenPage(page) }
                         )
@@ -165,22 +160,9 @@ class MainActivity : ComponentActivity() {
                                 onUpdateLanguage = { code -> viewModel.updateLanguage(code) },
                                 onUpdateIconPack = { pkg -> viewModel.updateIconPack(pkg) },
                                 onUpdateWallpaper = { wp -> viewModel.updateWallpaper(wp) },
-                                onUpdateSmartHome = { enabled, url -> viewModel.updateSmartHomeSettings(enabled, url) },
                                 onUpdateHaptics = { enabled -> viewModel.updateHapticFeedback(enabled) },
                                 onUnhideApp = { pkg -> viewModel.unhideApp(pkg) },
                                 onClose = { viewModel.closeSettings() }
-                            )
-                        }
-
-                        // SmartHome Panel Overlay (Screen -1 / Side Panel)
-                        AnimatedVisibility(
-                            visible = isSmartHomeOpen,
-                            enter = slideInHorizontally(initialOffsetX = { -it }) + fadeIn(),
-                            exit = slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
-                        ) {
-                            SmartHomePanel(
-                                dashboardUrl = settings.smartHomeUrl,
-                                onClose = { viewModel.closeSmartHome() }
                             )
                         }
 
