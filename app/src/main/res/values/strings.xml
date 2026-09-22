@@ -4,6 +4,7 @@
     <string name="search_web">Search web for \"%1$s\"</string>
     <string name="launcher_settings">Launcher Settings</string>
     <string name="homescreen">Home Screen</string>
+    <string name="add_to_home">Add to Home screen</string>
     <string name="app_drawer">App Drawer</string>
     <string name="language">Language</string>
     <string name="select_language">Select Language</string>

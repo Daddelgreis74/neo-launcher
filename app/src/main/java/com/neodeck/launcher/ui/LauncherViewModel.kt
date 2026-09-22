@@ -57,6 +57,13 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private val _availableIconPacks = MutableStateFlow<List<IconPackInfo>>(emptyList())
     val availableIconPacks: StateFlow<List<IconPackInfo>> = _availableIconPacks.asStateFlow()
 
+    private val _currentScreenPage = MutableStateFlow(0)
+    val currentScreenPage: StateFlow<Int> = _currentScreenPage.asStateFlow()
+
+    fun setCurrentScreenPage(page: Int) {
+        _currentScreenPage.value = page
+    }
+
     init {
         // Load icon pack if configured
         viewModelScope.launch {
@@ -173,25 +180,30 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         triggerHapticClick()
     }
 
-    fun addAppToHome(app: AppItem, page: Int = 0) {
-        val currentItems = gridItems.value.filter { it.page == page }
+    fun addAppToHome(app: AppItem, targetPage: Int? = null) {
+        val preferredPage = targetPage ?: _currentScreenPage.value
         val maxRows = settings.value.gridRows
         val maxCols = settings.value.gridCols
 
-        for (r in 0 until maxRows) {
-            for (c in 0 until maxCols) {
-                val occupied = currentItems.any { it.row == r && it.col == c }
-                if (!occupied) {
-                    val item = AppGridItem(
-                        id = UUID.randomUUID().toString(),
-                        page = page,
-                        row = r,
-                        col = c,
-                        app = app
-                    )
-                    gridRepository.addItemToGrid(item)
-                    triggerHapticClick()
-                    return
+        // Check preferred page first, then other pages (0..2)
+        val pagesToCheck = listOf(preferredPage) + (0..2).filter { it != preferredPage }
+        for (page in pagesToCheck) {
+            val currentItems = gridItems.value.filter { it.page == page }
+            for (r in 0 until maxRows) {
+                for (c in 0 until maxCols) {
+                    val occupied = currentItems.any { it.row == r && it.col == c }
+                    if (!occupied) {
+                        val item = AppGridItem(
+                            id = UUID.randomUUID().toString(),
+                            page = page,
+                            row = r,
+                            col = c,
+                            app = app
+                        )
+                        gridRepository.addItemToGrid(item)
+                        triggerHapticClick()
+                        return
+                    }
                 }
             }
         }

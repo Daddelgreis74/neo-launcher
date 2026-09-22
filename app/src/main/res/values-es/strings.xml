@@ -4,6 +4,7 @@
     <string name="search_web">Buscar en la web \"%1$s\"</string>
     <string name="launcher_settings">Ajustes del iniciador</string>
     <string name="homescreen">Pantalla de inicio</string>
+    <string name="add_to_home">Añadir a la pantalla de inicio</string>
     <string name="app_drawer">Cajón de aplicaciones</string>
     <string name="language">Idioma</string>
     <string name="select_language">Seleccionar idioma</string>

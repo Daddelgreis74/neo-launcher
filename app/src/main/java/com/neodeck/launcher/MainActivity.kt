@@ -127,7 +127,8 @@ class MainActivity : ComponentActivity() {
                             onOpenDrawer = { viewModel.openDrawer() },
                             onOpenSettings = { viewModel.openSettings() },
                             onOpenSmartHome = { viewModel.openSmartHome() },
-                            onAddWidgetClick = { startWidgetPick() }
+                            onAddWidgetClick = { startWidgetPick() },
+                            onPageChanged = { page -> viewModel.setCurrentScreenPage(page) }
                         )
 
                         // App Drawer Overlay with Slide Animation

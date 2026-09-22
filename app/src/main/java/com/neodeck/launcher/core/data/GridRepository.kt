@@ -86,14 +86,14 @@ class GridRepository(
         // Remove item at same page/row/col if overlapping
         current.removeAll { it.page == item.page && it.row == item.row && it.col == item.col }
         current.add(item)
-        _gridItems.value = current
+        _gridItems.value = current.toList()
         saveGrid()
     }
 
     fun removeItemFromGrid(itemId: String) {
         val current = _gridItems.value.toMutableList()
         current.removeAll { it.id == itemId }
-        _gridItems.value = current
+        _gridItems.value = current.toList()
         saveGrid()
     }
 
@@ -108,7 +108,7 @@ class GridRepository(
                 is WidgetGridItem -> item.copy(page = newPage, row = newRow, col = newCol)
             }
             current[index] = updated
-            _gridItems.value = current
+            _gridItems.value = current.toList()
             saveGrid()
         }
     }
@@ -137,7 +137,7 @@ class GridRepository(
                 } else {
                     current[index] = existing.copy(title = newTitle, apps = newApps)
                 }
-                _gridItems.value = current
+                _gridItems.value = current.toList()
                 saveGrid()
             }
         }
@@ -147,7 +147,7 @@ class GridRepository(
         val current = _dockItems.value.toMutableList()
         if (current.size < 5 && !current.contains(app)) {
             current.add(app)
-            _dockItems.value = current
+            _dockItems.value = current.toList()
             saveDock()
         }
     }
@@ -155,7 +155,7 @@ class GridRepository(
     fun removeAppFromDock(app: AppItem) {
         val current = _dockItems.value.toMutableList()
         current.remove(app)
-        _dockItems.value = current
+        _dockItems.value = current.toList()
         saveDock()
     }
 

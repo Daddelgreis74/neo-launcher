@@ -35,7 +35,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -76,11 +78,16 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenSmartHome: () -> Unit,
     onAddWidgetClick: () -> Unit,
+    onPageChanged: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 3 })
     var selectedItemForMenu by remember { mutableStateOf<GridItem?>(null) }
     var showEmptySpaceMenu by remember { mutableStateOf(false) }
+
+    LaunchedEffect(pagerState.currentPage) {
+        onPageChanged(pagerState.currentPage)
+    }
 
     Box(
         modifier = modifier
@@ -129,6 +136,10 @@ fun HomeScreen(
 
                 HorizontalPager(
                     state = pagerState,
+                    key = { page ->
+                        val itemsOnPage = gridItems.filter { it.page == page }
+                        "page_${page}_${itemsOnPage.size}_${itemsOnPage.map { it.id }.hashCode()}"
+                    },
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
                     Box(
@@ -144,18 +155,19 @@ fun HomeScreen(
                         val pageItems = gridItems.filter { it.page == page }
 
                         pageItems.forEach { item ->
-                            val xOffset = cellWidth * item.col
-                            val yOffset = cellHeight * item.row
-                            val itemWidth = cellWidth * item.spanX
-                            val itemHeight = cellHeight * item.spanY
+                            key(item.id) {
+                                val xOffset = cellWidth * item.col
+                                val yOffset = cellHeight * item.row
+                                val itemWidth = cellWidth * item.spanX
+                                val itemHeight = cellHeight * item.spanY
 
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .size(itemWidth, itemHeight)
-                                    .offset(x = xOffset, y = yOffset)
-                            ) {
-                                when (item) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .size(itemWidth, itemHeight)
+                                        .offset(x = xOffset, y = yOffset)
+                                ) {
+                                    when (item) {
                                     is AppGridItem -> {
                                         AppIconView(
                                             app = item.app,
@@ -256,6 +268,7 @@ fun HomeScreen(
                                 }
                             }
                         }
+                    }
 
                         // Long-Press Empty Space Menu
                         if (showEmptySpaceMenu) {

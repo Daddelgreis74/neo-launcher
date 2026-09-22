@@ -4,6 +4,7 @@
     <string name="search_web">Rechercher sur le Web « %1$s »</string>
     <string name="launcher_settings">Paramètres du lanceur</string>
     <string name="homescreen">Écran d’accueil</string>
+    <string name="add_to_home">Ajouter à l’écran d’accueil</string>
     <string name="app_drawer">Tiroir d’applications</string>
     <string name="language">Langue</string>
     <string name="select_language">Choisir la langue</string>

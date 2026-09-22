@@ -245,7 +245,7 @@ fun AppDrawer(
                                     onDismissRequest = { selectedAppForMenu = null }
                                 ) {
                                     DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.homescreen)) },
+                                        text = { Text(stringResource(R.string.add_to_home)) },
                                         onClick = {
                                             onAddToHome(app)
                                             selectedAppForMenu = null
