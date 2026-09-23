@@ -165,33 +165,66 @@ class IconPackManager(private val context: Context) {
 
         when (pack) {
             PACK_MATERIAL_YOU -> {
-                // Material You Dynamic / Monochrome styling
+                // Material You Dynamic Colors (Android 12+ / API 31+)
+                val isDarkMode = (context.resources.configuration.uiMode and
+                        android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                        android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+                val bgColor: Int = try {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                        val resId = if (isDarkMode) {
+                            android.R.color.system_accent2_800
+                        } else {
+                            android.R.color.system_accent2_100
+                        }
+                        context.getColor(resId)
+                    } else {
+                        if (isDarkMode) Color.argb(255, 34, 43, 54) else Color.argb(255, 230, 235, 245)
+                    }
+                } catch (_: Exception) {
+                    if (isDarkMode) Color.argb(255, 34, 43, 54) else Color.argb(255, 230, 235, 245)
+                }
+
+                val fgColor: Int = try {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                        val resId = if (isDarkMode) {
+                            android.R.color.system_accent1_100
+                        } else {
+                            android.R.color.system_accent1_900
+                        }
+                        context.getColor(resId)
+                    } else {
+                        if (isDarkMode) Color.argb(255, 210, 225, 255) else Color.argb(255, 20, 30, 45)
+                    }
+                } catch (_: Exception) {
+                    if (isDarkMode) Color.argb(255, 210, 225, 255) else Color.argb(255, 20, 30, 45)
+                }
+
                 val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = Color.argb(255, 34, 43, 54) // Material dynamic dark surface
+                    color = bgColor
                 }
                 val rect = RectF(0f, 0f, size.toFloat(), size.toFloat())
                 canvas.drawRoundRect(rect, 48f, 48f, bgPaint)
 
-                // Monochrome tint paint
-                val colorMatrix = ColorMatrix().apply { setSaturation(0f) }
-                val iconPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    colorFilter = ColorMatrixColorFilter(colorMatrix)
-                }
-
+                // Render base icon to inner bitmap
                 val padding = (size * 0.22f).toInt()
                 val innerBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
                 val innerCanvas = Canvas(innerBitmap)
                 baseDrawable.setBounds(padding, padding, size - padding, size - padding)
                 baseDrawable.draw(innerCanvas)
 
-                // Apply tinted monochrome overlay
+                // Monochrome silhouette with dynamic foreground color
+                val r = Color.red(fgColor) / 255f
+                val g = Color.green(fgColor) / 255f
+                val b = Color.blue(fgColor) / 255f
+
                 val tintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     colorFilter = ColorMatrixColorFilter(
                         floatArrayOf(
-                            0f, 0f, 0f, 0f, 0f,       // Red -> 0
-                            0.8f, 0.8f, 0.8f, 0f, 220f, // Green -> Cyan tint
-                            0.9f, 0.9f, 0.9f, 0f, 255f, // Blue -> Cyan tint
-                            0f, 0f, 0f, 1f, 0f        // Alpha
+                            0f, 0f, 0f, 0f, r * 255f, // Red channel
+                            0f, 0f, 0f, 0f, g * 255f, // Green channel
+                            0f, 0f, 0f, 0f, b * 255f, // Blue channel
+                            0.2126f, 0.7152f, 0.0722f, 0f, 0f // Alpha channel from luminance
                         )
                     )
                 }
