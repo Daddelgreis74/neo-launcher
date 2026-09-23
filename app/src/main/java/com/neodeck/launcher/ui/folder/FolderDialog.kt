@@ -40,6 +40,7 @@ fun FolderDialog(
     appRepository: AppRepository,
     onAppClick: (AppItem) -> Unit,
     onDismiss: () -> Unit,
+    iconPackPackage: String? = null,
     modifier: Modifier = Modifier
 ) {
     var title by remember { mutableStateOf(folder.title) }
@@ -90,7 +91,8 @@ fun FolderDialog(
                         appRepository = appRepository,
                         onClick = { onAppClick(app) },
                         showLabel = true,
-                        iconSize = 48
+                        iconSize = 48,
+                        iconPackPackage = iconPackPackage
                     )
                 }
             }

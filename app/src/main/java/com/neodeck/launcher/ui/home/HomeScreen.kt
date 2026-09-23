@@ -152,7 +152,7 @@ fun HomeScreen(
                         val pageItems = gridItems.filter { it.page == page }
 
                         pageItems.forEach { item ->
-                            key(item.id) {
+                            key(item.id, settings.iconPackPackage) {
                                 val xOffset = cellWidth * item.col
                                 val yOffset = cellHeight * item.row
                                 val itemWidth = cellWidth * item.spanX
@@ -172,7 +172,8 @@ fun HomeScreen(
                                             onClick = { onAppClick(item.app) },
                                             onLongClick = { selectedItemForMenu = item },
                                             showLabel = settings.showAppLabels,
-                                            iconSize = 52
+                                            iconSize = 52,
+                                            iconPackPackage = settings.iconPackPackage
                                         )
                                     }
                                     is FolderGridItem -> {
@@ -322,13 +323,16 @@ fun HomeScreen(
                     .padding(horizontal = 8.dp, vertical = 8.dp)
             ) {
                 dockItems.take(5).forEach { app ->
-                    AppIconView(
-                        app = app,
-                        appRepository = appRepository,
-                        onClick = { onAppClick(app) },
-                        showLabel = false,
-                        iconSize = 48
-                    )
+                    key(app.packageName, settings.iconPackPackage) {
+                        AppIconView(
+                            app = app,
+                            appRepository = appRepository,
+                            onClick = { onAppClick(app) },
+                            showLabel = false,
+                            iconSize = 48,
+                            iconPackPackage = settings.iconPackPackage
+                        )
+                    }
                 }
             }
 

@@ -15,6 +15,9 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.content.res.ResourcesCompat
 import com.neodeck.launcher.core.model.AppItem
 import org.xmlpull.v1.XmlPullParser
@@ -31,7 +34,7 @@ class IconPackManager(private val context: Context) {
 
     private val packageManager: PackageManager = context.packageManager
     private val iconMap = ConcurrentHashMap<String, String>() // "pkg/activity" -> drawableName
-    var currentPackPackage: String? = null
+    var currentPackPackage: String? by mutableStateOf(null)
         private set
     private var currentPackRes: Resources? = null
 

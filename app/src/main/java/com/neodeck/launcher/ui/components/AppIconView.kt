@@ -40,9 +40,10 @@ fun AppIconView(
     onLongClick: (() -> Unit)? = null,
     showLabel: Boolean = true,
     iconSize: Int = 54,
+    iconPackPackage: String? = appRepository.iconPackManager.currentPackPackage,
     modifier: Modifier = Modifier
 ) {
-    val iconBitmap = remember(app.packageName, app.activityName, appRepository.iconPackManager.currentPackPackage) {
+    val iconBitmap = remember(app.packageName, app.activityName, iconPackPackage) {
         val drawable = appRepository.getAppIcon(app)
         drawableToBitmap(drawable)?.asImageBitmap()
     }

@@ -70,6 +70,7 @@ fun AppDrawer(
     onAddToHome: (AppItem) -> Unit,
     onHideApp: (AppItem) -> Unit = {},
     onClose: () -> Unit,
+    iconPackPackage: String? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -236,7 +237,8 @@ fun AppDrawer(
                                 onClick = { onAppClick(app) },
                                 onLongClick = { selectedAppForMenu = app },
                                 showLabel = true,
-                                iconSize = 52
+                                iconSize = 52,
+                                iconPackPackage = iconPackPackage
                             )
 
                             if (selectedAppForMenu == app) {

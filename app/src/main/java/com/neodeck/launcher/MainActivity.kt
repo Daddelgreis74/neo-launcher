@@ -150,7 +150,8 @@ class MainActivity : ComponentActivity() {
                                 onAppClick = { app -> viewModel.launchApp(app) },
                                 onAddToHome = { app -> viewModel.addAppToHome(app) },
                                 onHideApp = { app -> viewModel.hideApp(app) },
-                                onClose = { viewModel.closeDrawer() }
+                                onClose = { viewModel.closeDrawer() },
+                                iconPackPackage = settings.iconPackPackage
                             )
                         }
 
@@ -186,7 +187,8 @@ class MainActivity : ComponentActivity() {
                                 folder = folder,
                                 appRepository = viewModel.appRepository,
                                 onAppClick = { app -> viewModel.launchApp(app) },
-                                onDismiss = { viewModel.closeFolder() }
+                                onDismiss = { viewModel.closeFolder() },
+                                iconPackPackage = settings.iconPackPackage
                             )
                         }
                     }
