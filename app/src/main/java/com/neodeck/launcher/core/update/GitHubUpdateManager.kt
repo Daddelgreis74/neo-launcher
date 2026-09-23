@@ -37,16 +37,16 @@ sealed interface UpdateState {
 class GitHubUpdateManager(private val context: Context) {
 
     companion object {
-        const val DEFAULT_REPO_OWNER = "dadde88"
+        const val DEFAULT_REPO_OWNER = "Daddelgreis74"
         const val DEFAULT_REPO_NAME = "neo-launcher"
     }
 
     fun getCurrentVersionName(): String {
         return try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            pInfo.versionName ?: "2.0"
+            pInfo.versionName ?: "1.0.0"
         } catch (_: Exception) {
-            "2.0"
+            "1.0.0"
         }
     }
 

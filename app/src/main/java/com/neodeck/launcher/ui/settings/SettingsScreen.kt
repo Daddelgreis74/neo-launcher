@@ -305,7 +305,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Version 2.0 (Widgets, Icon-Packs, Edge-to-Edge & Android 16 Ready)",
+                        text = "Version $currentVersionName (Widgets, Icon-Packs, Edge-to-Edge & Android 16 Ready)",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
