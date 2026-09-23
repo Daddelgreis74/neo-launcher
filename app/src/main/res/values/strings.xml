@@ -27,4 +27,11 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
+    <string name="edit_home">Edit Home screen</string>
+    <string name="edit_mode_done">Done</string>
+    <string name="widget_weather_clock">Clock &amp; Weather</string>
+    <string name="widget_battery">Battery Status</string>
+    <string name="widget_search_bar">Search Bar</string>
+    <string name="add_launcher_widget">Add Neo Widget</string>
+    <string name="add_system_widget">Add System Widget</string>
 </resources>

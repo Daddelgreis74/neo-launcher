@@ -27,4 +27,11 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Hell</string>
     <string name="theme_dark">Dunkel</string>
+    <string name="edit_home">Startbildschirm bearbeiten</string>
+    <string name="edit_mode_done">Fertig</string>
+    <string name="widget_weather_clock">Uhr &amp; Wetter</string>
+    <string name="widget_battery">Akkustand</string>
+    <string name="widget_search_bar">Google-Suchleiste</string>
+    <string name="add_launcher_widget">Neo-Widget hinzufügen</string>
+    <string name="add_system_widget">System-Widget hinzufügen</string>
 </resources>

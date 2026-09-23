@@ -15,6 +15,7 @@ import com.neodeck.launcher.core.model.GridItem
 import com.neodeck.launcher.core.model.LauncherSettings
 import com.neodeck.launcher.core.model.ThemeMode
 import com.neodeck.launcher.core.model.WidgetGridItem
+import com.neodeck.launcher.core.model.CustomWidgetGridItem
 import com.neodeck.launcher.core.update.GitHubUpdateManager
 import com.neodeck.launcher.core.update.UpdateInfo
 import com.neodeck.launcher.core.update.UpdateState
@@ -35,6 +36,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     val gridRepository = GridRepository(application, appRepository)
     val hapticHelper = HapticHelper(application)
     val updateManager = GitHubUpdateManager(application)
+    val weatherRepository = com.neodeck.launcher.core.weather.WeatherRepository(application)
 
     val allApps: StateFlow<List<AppItem>> = appRepository.apps
     val settings: StateFlow<LauncherSettings> = preferences.settings
@@ -212,6 +214,47 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             row = 1,
             col = 0,
             appWidgetId = appWidgetId,
+            spanX = spanX,
+            spanY = spanY
+        )
+        gridRepository.addItemToGrid(item)
+        triggerHapticClick()
+    }
+
+    fun addCustomWidgetToHome(widgetType: String, spanX: Int, spanY: Int, page: Int = 0) {
+        val currentItems = gridRepository.gridItems.value
+        val rows = settings.value.gridRows
+        val cols = settings.value.gridCols
+
+        // Find first slot that fits spanX * spanY
+        var targetRow = 0
+        var targetCol = 0
+        var slotFound = false
+
+        for (r in 0..(rows - spanY)) {
+            for (c in 0..(cols - spanX)) {
+                // Check if any occupied cell overlaps with rect [r..r+spanY, c..c+spanX]
+                val overlaps = currentItems.any { item ->
+                    item.page == page &&
+                    item.col < c + spanX && item.col + item.spanX > c &&
+                    item.row < r + spanY && item.row + item.spanY > r
+                }
+                if (!overlaps) {
+                    targetRow = r
+                    targetCol = c
+                    slotFound = true
+                    break
+                }
+            }
+            if (slotFound) break
+        }
+
+        val item = CustomWidgetGridItem(
+            id = UUID.randomUUID().toString(),
+            page = page,
+            row = targetRow,
+            col = targetCol,
+            widgetType = widgetType,
             spanX = spanX,
             spanY = spanY
         )

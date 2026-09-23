@@ -6,6 +6,7 @@ import com.neodeck.launcher.core.model.AppItem
 import com.neodeck.launcher.core.model.FolderGridItem
 import com.neodeck.launcher.core.model.GridItem
 import com.neodeck.launcher.core.model.WidgetGridItem
+import com.neodeck.launcher.core.model.CustomWidgetGridItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -106,6 +107,7 @@ class GridRepository(
                 is AppGridItem -> item.copy(page = newPage, row = newRow, col = newCol)
                 is FolderGridItem -> item.copy(page = newPage, row = newRow, col = newCol)
                 is WidgetGridItem -> item.copy(page = newPage, row = newRow, col = newCol)
+                is CustomWidgetGridItem -> item.copy(page = newPage, row = newRow, col = newCol)
             }
             current[index] = updated
             _gridItems.value = current.toList()
@@ -196,6 +198,10 @@ class GridRepository(
                             obj.put("type", "widget")
                             obj.put("appWidgetId", item.appWidgetId)
                         }
+                        is CustomWidgetGridItem -> {
+                            obj.put("type", "custom_widget")
+                            obj.put("widgetType", item.widgetType)
+                        }
                     }
                     array.put(obj)
                 }
@@ -262,6 +268,10 @@ class GridRepository(
                     "widget" -> {
                         val widgetId = obj.getInt("appWidgetId")
                         list.add(WidgetGridItem(id, page, row, col, widgetId, spanX, spanY))
+                    }
+                    "custom_widget" -> {
+                        val widgetType = obj.getString("widgetType")
+                        list.add(CustomWidgetGridItem(id, page, row, col, widgetType, spanX, spanY))
                     }
                 }
             }

@@ -50,6 +50,16 @@ data class WidgetGridItem(
     override val spanY: Int = 2
 ) : GridItem
 
+data class CustomWidgetGridItem(
+    override val id: String,
+    override val page: Int,
+    override val row: Int,
+    override val col: Int,
+    val widgetType: String, // "weather_clock", "battery", "search_bar"
+    override val spanX: Int = 4,
+    override val spanY: Int = 2
+) : GridItem
+
 enum class ThemeMode {
     SYSTEM,
     LIGHT,
