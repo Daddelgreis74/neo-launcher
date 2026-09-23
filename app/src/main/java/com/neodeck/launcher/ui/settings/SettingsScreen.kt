@@ -159,11 +159,18 @@ fun SettingsScreen(
                         subtitle = "System-Hintergrundbild (Tippen zum Ändern)",
                         onClick = {
                             try {
-                                val intent = Intent(Intent.ACTION_SET_WALLPAPER)
-                                context.startActivity(Intent.createChooser(intent, "Hintergrundbild wählen"))
+                                val intent = Intent(Intent.ACTION_SET_WALLPAPER).apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                }
+                                context.startActivity(Intent.createChooser(intent, "Hintergrundbild wählen").apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                })
                             } catch (_: Exception) {
                                 try {
-                                    context.startActivity(Intent(android.provider.Settings.ACTION_WALLPAPER_SETTINGS))
+                                    val fallback = Intent("android.settings.WALLPAPER_SETTINGS").apply {
+                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                    }
+                                    context.startActivity(fallback)
                                 } catch (_: Exception) {}
                             }
                         }
