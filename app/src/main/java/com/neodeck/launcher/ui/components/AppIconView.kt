@@ -42,7 +42,7 @@ fun AppIconView(
     iconSize: Int = 54,
     modifier: Modifier = Modifier
 ) {
-    val iconBitmap = remember(app.packageName, app.activityName) {
+    val iconBitmap = remember(app.packageName, app.activityName, appRepository.iconPackManager.currentPackPackage) {
         val drawable = appRepository.getAppIcon(app)
         drawableToBitmap(drawable)?.asImageBitmap()
     }

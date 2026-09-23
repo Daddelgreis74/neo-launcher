@@ -15,6 +15,9 @@ import com.neodeck.launcher.core.model.GridItem
 import com.neodeck.launcher.core.model.LauncherSettings
 import com.neodeck.launcher.core.model.ThemeMode
 import com.neodeck.launcher.core.model.WidgetGridItem
+import com.neodeck.launcher.core.update.GitHubUpdateManager
+import com.neodeck.launcher.core.update.UpdateInfo
+import com.neodeck.launcher.core.update.UpdateState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.UUID
 
 class LauncherViewModel(application: Application) : AndroidViewModel(application) {
@@ -30,11 +34,15 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     val preferences = LauncherPreferences(application)
     val gridRepository = GridRepository(application, appRepository)
     val hapticHelper = HapticHelper(application)
+    val updateManager = GitHubUpdateManager(application)
 
     val allApps: StateFlow<List<AppItem>> = appRepository.apps
     val settings: StateFlow<LauncherSettings> = preferences.settings
     val gridItems: StateFlow<List<GridItem>> = gridRepository.gridItems
     val dockItems: StateFlow<List<AppItem>> = gridRepository.dockItems
+
+    private val _updateState = MutableStateFlow<UpdateState>(UpdateState.Idle)
+    val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -267,5 +275,51 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun triggerHapticHeavy() {
         hapticHelper.performHeavyClick(settings.value.hapticFeedbackEnabled)
+    }
+
+    fun checkForUpdates() {
+        viewModelScope.launch {
+            _updateState.value = UpdateState.Checking
+            triggerHapticClick()
+            val result = updateManager.checkForUpdates()
+            result.onSuccess { info ->
+                if (info.isNewer) {
+                    _updateState.value = UpdateState.Available(info)
+                    triggerHapticClick()
+                } else {
+                    _updateState.value = UpdateState.UpToDate
+                }
+            }.onFailure { err ->
+                _updateState.value = UpdateState.Error(err.message ?: "Verbindung fehlgeschlagen")
+            }
+        }
+    }
+
+    fun startDownloadUpdate(info: UpdateInfo) {
+        viewModelScope.launch {
+            _updateState.value = UpdateState.Downloading(0f, info)
+            triggerHapticClick()
+            val result = updateManager.downloadUpdate(info) { progress ->
+                _updateState.value = UpdateState.Downloading(progress, info)
+            }
+            result.onSuccess { file ->
+                _updateState.value = UpdateState.ReadyToInstall(file, info)
+                triggerHapticClick()
+            }.onFailure { err ->
+                _updateState.value = UpdateState.Error(err.message ?: "Download fehlgeschlagen")
+            }
+        }
+    }
+
+    fun installDownloadedUpdate(file: File) {
+        triggerHapticClick()
+        val res = updateManager.installApk(file)
+        res.onFailure { err ->
+            _updateState.value = UpdateState.Error(err.message ?: "Installation fehlgeschlagen")
+        }
+    }
+
+    fun dismissUpdate() {
+        _updateState.value = UpdateState.Idle
     }
 }

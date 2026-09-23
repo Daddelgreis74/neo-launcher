@@ -98,30 +98,37 @@ class AppRepository(
     }
 
     fun getAppIcon(app: AppItem): Drawable? {
-        val cacheKey = "${app.packageName}/${app.activityName}/${app.userHandle?.hashCode() ?: 0}"
+        val cacheKey = "${app.packageName}/${app.activityName}/${app.userHandle?.hashCode() ?: 0}/${iconPackManager.currentPackPackage}"
         iconCache[cacheKey]?.let { return it }
 
-        // Check active icon pack first
-        val iconPackDrawable = iconPackManager.getIconForApp(app)
-        if (iconPackDrawable != null) {
-            iconCache[cacheKey] = iconPackDrawable
-            return iconPackDrawable
+        // Check active third-party icon pack first
+        if (!iconPackManager.isBuiltinPack()) {
+            val iconPackDrawable = iconPackManager.getIconForApp(app)
+            if (iconPackDrawable != null) {
+                iconCache[cacheKey] = iconPackDrawable
+                return iconPackDrawable
+            }
         }
 
-        return try {
+        val baseDrawable = try {
             val user = app.userHandle ?: Process.myUserHandle()
             val activities = launcherApps.getActivityList(app.packageName, user)
             val info = activities.find { it.name == app.activityName }
                 ?: activities.firstOrNull()
-            val drawable = info?.getBadgedIcon(context.resources.displayMetrics.densityDpi)
+            info?.getBadgedIcon(context.resources.displayMetrics.densityDpi)
                 ?: context.packageManager.getApplicationIcon(app.packageName)
-            if (drawable != null) {
-                iconCache[cacheKey] = drawable
-            }
-            drawable
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
+        } ?: return null
+
+        val finalDrawable = if (iconPackManager.isBuiltinPack()) {
+            iconPackManager.transformIcon(baseDrawable)
+        } else {
+            baseDrawable
         }
+
+        iconCache[cacheKey] = finalDrawable
+        return finalDrawable
     }
 
     fun launchApp(app: AppItem) {

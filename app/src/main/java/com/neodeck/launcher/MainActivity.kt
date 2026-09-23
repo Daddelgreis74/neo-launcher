@@ -20,9 +20,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import com.neodeck.launcher.core.model.ThemeMode
 import com.neodeck.launcher.core.widget.LauncherWidgetHost
 import com.neodeck.launcher.ui.LauncherViewModel
@@ -93,6 +95,12 @@ class MainActivity : ComponentActivity() {
             val activeFolder by viewModel.activeFolder.collectAsState()
             val selectedDrawerTab by viewModel.selectedDrawerTab.collectAsState()
             val availableIconPacks by viewModel.availableIconPacks.collectAsState()
+            val updateState by viewModel.updateState.collectAsState()
+
+            val currentView = LocalView.current
+            LaunchedEffect(currentView) {
+                viewModel.hapticHelper.attachView(currentView)
+            }
 
             val isDark = when (settings.themeMode) {
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
@@ -155,6 +163,8 @@ class MainActivity : ComponentActivity() {
                             SettingsScreen(
                                 settings = settings,
                                 availableIconPacks = availableIconPacks,
+                                updateState = updateState,
+                                currentVersionName = viewModel.updateManager.getCurrentVersionName(),
                                 onUpdateTheme = { mode -> viewModel.updateTheme(mode) },
                                 onUpdateGridSize = { rows, cols -> viewModel.updateGridSize(rows, cols) },
                                 onUpdateLanguage = { code -> viewModel.updateLanguage(code) },
@@ -162,6 +172,10 @@ class MainActivity : ComponentActivity() {
                                 onUpdateWallpaper = { wp -> viewModel.updateWallpaper(wp) },
                                 onUpdateHaptics = { enabled -> viewModel.updateHapticFeedback(enabled) },
                                 onUnhideApp = { pkg -> viewModel.unhideApp(pkg) },
+                                onCheckForUpdates = { viewModel.checkForUpdates() },
+                                onStartDownloadUpdate = { info -> viewModel.startDownloadUpdate(info) },
+                                onInstallDownloadedUpdate = { file -> viewModel.installDownloadedUpdate(file) },
+                                onDismissUpdate = { viewModel.dismissUpdate() },
                                 onClose = { viewModel.closeSettings() }
                             )
                         }
