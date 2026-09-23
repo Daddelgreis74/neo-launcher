@@ -34,4 +34,5 @@
     <string name="widget_search_bar">Google-Suchleiste</string>
     <string name="add_launcher_widget">Neo-Widget hinzufügen</string>
     <string name="add_system_widget">System-Widget hinzufügen</string>
+    <string name="widgets_title">Widgets</string>
 </resources>

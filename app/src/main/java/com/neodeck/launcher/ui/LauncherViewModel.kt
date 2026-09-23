@@ -272,6 +272,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         triggerHapticTick()
     }
 
+    fun resizeGridItem(id: String, newSpanX: Int, newSpanY: Int) {
+        gridRepository.resizeItem(id, newSpanX, newSpanY)
+        triggerHapticTick()
+    }
+
     fun addAppToDock(app: AppItem) {
         gridRepository.addAppToDock(app)
         triggerHapticClick()

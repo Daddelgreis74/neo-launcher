@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -74,20 +75,25 @@ fun ClockWeatherWidget(
         weatherInfo = weatherRepository.getWeather()
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .clip(RoundedCornerShape(24.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
-            .padding(16.dp)
     ) {
+        val isCompactHeight = maxHeight < 110.dp
+        val isCompactWidth = maxWidth < 210.dp
+
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(if (isCompactHeight) 10.dp else 16.dp)
         ) {
             // Clock & Date (tap opens Clock / Alarms)
             Column(
+                verticalArrangement = Arrangement.Center,
                 modifier = Modifier
                     .weight(1f)
                     .clickable {
@@ -108,18 +114,28 @@ fun ClockWeatherWidget(
             ) {
                 Text(
                     text = currentTime.ifEmpty { "12:00" },
-                    style = MaterialTheme.typography.displayMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = (-1).sp
-                    ),
+                    style = if (isCompactHeight) {
+                        MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = (-0.5).sp
+                        )
+                    } else {
+                        MaterialTheme.typography.displayMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = (-1).sp
+                        )
+                    },
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = currentDate,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (!isCompactHeight || !isCompactWidth) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = currentDate,
+                        style = if (isCompactHeight) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
             }
 
             // Weather Pill
@@ -129,27 +145,37 @@ fun ClockWeatherWidget(
                     modifier = Modifier
                         .clip(RoundedCornerShape(16.dp))
                         .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                        .padding(
+                            horizontal = if (isCompactHeight) 8.dp else 12.dp,
+                            vertical = if (isCompactHeight) 6.dp else 8.dp
+                        )
                 ) {
                     val icon = getWeatherIcon(weather.weatherCode)
                     Icon(
                         imageVector = icon,
                         contentDescription = weather.description,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(if (isCompactHeight) 20.dp else 24.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
                             text = "${weather.temperature.roundToInt()}°",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            style = if (isCompactHeight) {
+                                MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                            } else {
+                                MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            },
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
-                        Text(
-                            text = weather.description,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                        )
+                        if (!isCompactHeight) {
+                            Text(
+                                text = weather.description,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }

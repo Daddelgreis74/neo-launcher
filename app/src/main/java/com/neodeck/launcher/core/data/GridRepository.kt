@@ -115,6 +115,25 @@ class GridRepository(
         }
     }
 
+    fun resizeItem(itemId: String, newSpanX: Int, newSpanY: Int) {
+        val current = _gridItems.value.toMutableList()
+        val index = current.indexOfFirst { it.id == itemId }
+        if (index != -1) {
+            val item = current[index]
+            val clampedSpanX = newSpanX.coerceIn(1, 5)
+            val clampedSpanY = newSpanY.coerceIn(1, 5)
+            val updated: GridItem = when (item) {
+                is AppGridItem -> item.copy(spanX = clampedSpanX, spanY = clampedSpanY)
+                is FolderGridItem -> item.copy(spanX = clampedSpanX, spanY = clampedSpanY)
+                is WidgetGridItem -> item.copy(spanX = clampedSpanX, spanY = clampedSpanY)
+                is CustomWidgetGridItem -> item.copy(spanX = clampedSpanX, spanY = clampedSpanY)
+            }
+            current[index] = updated
+            _gridItems.value = current.toList()
+            saveGrid()
+        }
+    }
+
     fun createFolder(title: String, page: Int, row: Int, col: Int, apps: List<AppItem>): FolderGridItem {
         val folder = FolderGridItem(
             id = UUID.randomUUID().toString(),

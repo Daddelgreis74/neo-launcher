@@ -4,6 +4,7 @@ import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,6 +24,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import com.neodeck.launcher.core.model.ThemeMode
@@ -34,6 +38,7 @@ import com.neodeck.launcher.ui.home.HomeScreen
 import com.neodeck.launcher.ui.home.WallpaperBackground
 import com.neodeck.launcher.ui.settings.SettingsScreen
 import com.neodeck.launcher.ui.theme.NeoLauncherTheme
+import com.neodeck.launcher.ui.widgets.WidgetPickerSheet
 
 class MainActivity : ComponentActivity() {
 
@@ -43,23 +48,21 @@ class MainActivity : ComponentActivity() {
     private lateinit var appWidgetHost: LauncherWidgetHost
 
     private var pendingWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
+    private var pendingProviderInfo: AppWidgetProviderInfo? = null
 
-    // Launcher for picking a widget
-    private val pickWidgetLauncher = registerForActivityResult(
+    // Launcher for binding permission (if system prompt is required)
+    private val bindWidgetLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-            val appWidgetId = result.data?.getIntExtra(
-                AppWidgetManager.EXTRA_APPWIDGET_ID,
-                AppWidgetManager.INVALID_APPWIDGET_ID
-            ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
-
-            if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                configureOrAddWidget(appWidgetId)
+        if (result.resultCode == Activity.RESULT_OK && pendingWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            val provider = pendingProviderInfo
+            if (provider != null) {
+                configureOrAddAllocatedWidget(pendingWidgetId, provider)
             }
         } else if (pendingWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
             appWidgetHost.deleteAppWidgetId(pendingWidgetId)
             pendingWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+            pendingProviderInfo = null
         }
     }
 
@@ -68,12 +71,15 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK && pendingWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-            val span = calculateWidgetSpan(pendingWidgetId)
-            viewModel.addWidgetToHome(pendingWidgetId, spanX = span.first, spanY = span.second)
+            val provider = pendingProviderInfo
+            val span = calculateWidgetSpan(pendingWidgetId, provider)
+            viewModel.addWidgetToHome(pendingWidgetId, page = viewModel.currentScreenPage.value, spanX = span.first, spanY = span.second)
             pendingWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+            pendingProviderInfo = null
         } else if (pendingWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
             appWidgetHost.deleteAppWidgetId(pendingWidgetId)
             pendingWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+            pendingProviderInfo = null
         }
     }
 
@@ -109,6 +115,8 @@ class MainActivity : ComponentActivity() {
             }
 
             NeoLauncherTheme(darkTheme = isDark) {
+                var isWidgetPickerOpen by remember { mutableStateOf(false) }
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -130,10 +138,11 @@ class MainActivity : ComponentActivity() {
                             onFolderClick = { folder -> viewModel.openFolder(folder) },
                             onRemoveGridItem = { id -> viewModel.removeGridItem(id) },
                             onMoveGridItem = { id, page, row, col -> viewModel.moveGridItem(id, page, row, col) },
+                            onResizeGridItem = { id, spanX, spanY -> viewModel.resizeGridItem(id, spanX, spanY) },
                             onAddCustomWidget = { type, spanX, spanY, page -> viewModel.addCustomWidgetToHome(type, spanX, spanY, page) },
                             onOpenDrawer = { viewModel.openDrawer() },
                             onOpenSettings = { viewModel.openSettings() },
-                            onAddWidgetClick = { startWidgetPick() },
+                            onAddWidgetClick = { isWidgetPickerOpen = true },
                             onPageChanged = { page -> viewModel.setCurrentScreenPage(page) }
                         )
 
@@ -194,6 +203,20 @@ class MainActivity : ComponentActivity() {
                                 iconPackPackage = settings.iconPackPackage
                             )
                         }
+
+                        // Widget Picker Sheet Overlay
+                        if (isWidgetPickerOpen) {
+                            WidgetPickerSheet(
+                                appWidgetManager = appWidgetManager,
+                                onSelectCustomWidget = { type, spanX, spanY ->
+                                    viewModel.addCustomWidgetToHome(type, spanX, spanY, viewModel.currentScreenPage.value)
+                                },
+                                onSelectSystemWidget = { info ->
+                                    handleSystemWidgetSelected(info)
+                                },
+                                onDismiss = { isWidgetPickerOpen = false }
+                            )
+                        }
                     }
                 }
             }
@@ -216,47 +239,70 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        try {
-            appWidgetHost.deleteHost()
-        } catch (_: Exception) {}
+        // Do not call deleteHost() here, as it unbinds all widgets on Activity recreation!
     }
 
-    private fun startWidgetPick() {
+    private fun handleSystemWidgetSelected(providerInfo: AppWidgetProviderInfo) {
         try {
-            pendingWidgetId = appWidgetHost.allocateAppWidgetId()
-            val pickIntent = Intent(AppWidgetManager.ACTION_APPWIDGET_PICK).apply {
-                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, pendingWidgetId)
-            }
-            pickWidgetLauncher.launch(pickIntent)
-        } catch (_: Exception) {}
-    }
-
-    private fun configureOrAddWidget(appWidgetId: Int) {
-        val info: AppWidgetProviderInfo? = appWidgetManager.getAppWidgetInfo(appWidgetId)
-        if (info?.configure != null) {
+            val appWidgetId = appWidgetHost.allocateAppWidgetId()
             pendingWidgetId = appWidgetId
+            pendingProviderInfo = providerInfo
+
+            val canBind = appWidgetManager.bindAppWidgetIdIfAllowed(appWidgetId, providerInfo.provider)
+            if (canBind) {
+                configureOrAddAllocatedWidget(appWidgetId, providerInfo)
+            } else {
+                val bindIntent = Intent(AppWidgetManager.ACTION_APPWIDGET_BIND).apply {
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, providerInfo.provider)
+                }
+                bindWidgetLauncher.launch(bindIntent)
+            }
+        } catch (_: Exception) {
+            if (pendingWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+                try {
+                    appWidgetHost.deleteAppWidgetId(pendingWidgetId)
+                } catch (_: Exception) {}
+                pendingWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+                pendingProviderInfo = null
+            }
+        }
+    }
+
+    private fun configureOrAddAllocatedWidget(appWidgetId: Int, providerInfo: AppWidgetProviderInfo) {
+        if (providerInfo.configure != null) {
             val configIntent = Intent(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE).apply {
-                component = info.configure
+                component = providerInfo.configure
                 putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
             }
             try {
                 configureWidgetLauncher.launch(configIntent)
             } catch (_: Exception) {
-                // If configure fails to launch, add directly
-                val span = calculateWidgetSpan(appWidgetId)
-                viewModel.addWidgetToHome(appWidgetId, spanX = span.first, spanY = span.second)
+                val span = calculateWidgetSpan(appWidgetId, providerInfo)
+                viewModel.addWidgetToHome(appWidgetId, page = viewModel.currentScreenPage.value, spanX = span.first, spanY = span.second)
+                pendingWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+                pendingProviderInfo = null
             }
         } else {
-            val span = calculateWidgetSpan(appWidgetId)
-            viewModel.addWidgetToHome(appWidgetId, spanX = span.first, spanY = span.second)
+            val span = calculateWidgetSpan(appWidgetId, providerInfo)
+            viewModel.addWidgetToHome(appWidgetId, page = viewModel.currentScreenPage.value, spanX = span.first, spanY = span.second)
             pendingWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+            pendingProviderInfo = null
         }
     }
 
-    private fun calculateWidgetSpan(appWidgetId: Int): Pair<Int, Int> {
-        val info = appWidgetManager.getAppWidgetInfo(appWidgetId) ?: return 2 to 2
-        val spanX = ((info.minWidth + 30) / 70).coerceIn(1, 4)
-        val spanY = ((info.minHeight + 30) / 70).coerceIn(1, 4)
+    private fun calculateWidgetSpan(appWidgetId: Int, info: AppWidgetProviderInfo?): Pair<Int, Int> {
+        val providerInfo = info ?: appWidgetManager.getAppWidgetInfo(appWidgetId) ?: return 2 to 2
+        val spanX = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && providerInfo.targetCellWidth > 0) {
+            providerInfo.targetCellWidth.coerceIn(1, 5)
+        } else {
+            ((providerInfo.minWidth + 30) / 70).coerceIn(1, 5)
+        }
+        val spanY = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && providerInfo.targetCellHeight > 0) {
+            providerInfo.targetCellHeight.coerceIn(1, 5)
+        } else {
+            ((providerInfo.minHeight + 30) / 70).coerceIn(1, 5)
+        }
         return spanX to spanY
     }
 }

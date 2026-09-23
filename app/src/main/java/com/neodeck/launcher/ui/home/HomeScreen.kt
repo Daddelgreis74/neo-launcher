@@ -55,6 +55,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -65,12 +66,14 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.neodeck.launcher.R
 import com.neodeck.launcher.core.data.AppRepository
 import com.neodeck.launcher.core.model.AppGridItem
@@ -101,6 +104,7 @@ fun HomeScreen(
     onFolderClick: (FolderGridItem) -> Unit,
     onRemoveGridItem: (String) -> Unit,
     onMoveGridItem: (String, Int, Int, Int) -> Unit,
+    onResizeGridItem: (String, Int, Int) -> Unit = { _, _, _ -> },
     onAddCustomWidget: (String, Int, Int, Int) -> Unit,
     onOpenDrawer: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -111,7 +115,6 @@ fun HomeScreen(
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 3 })
     var selectedItemForMenu by remember { mutableStateOf<GridItem?>(null) }
     var showEmptySpaceMenu by remember { mutableStateOf(false) }
-    var showCustomWidgetPicker by remember { mutableStateOf(false) }
 
     // Edit Mode State
     var isEditMode by remember { mutableStateOf(false) }
@@ -183,7 +186,7 @@ fun HomeScreen(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         TextButton(
-                            onClick = { showCustomWidgetPicker = true }
+                            onClick = { onAddWidgetClick() }
                         ) {
                             Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(4.dp))
@@ -227,6 +230,10 @@ fun HomeScreen(
 
                 val cellWidth = totalWidth / cols
                 val cellHeight = totalHeight / rows
+
+                val density = LocalDensity.current
+                val cellWidthPx = with(density) { cellWidth.toPx() }
+                val cellHeightPx = with(density) { cellHeight.toPx() }
 
                 HorizontalPager(
                     state = pagerState,
@@ -301,12 +308,14 @@ fun HomeScreen(
                                 val itemWidth = cellWidth * item.spanX
                                 val itemHeight = cellHeight * item.spanY
                                 val isSelected = selectedItemToMove == item
+                                val isWidget = item is CustomWidgetGridItem || item is WidgetGridItem
 
                                 Box(
                                     contentAlignment = Alignment.Center,
                                     modifier = Modifier
                                         .size(itemWidth, itemHeight)
                                         .offset(x = xOffset, y = yOffset)
+                                        .zIndex(if (isEditMode && isSelected) 10f else 1f)
                                         .rotate(if (isEditMode && !isSelected) jiggleAngle else 0f)
                                         .then(
                                             if (isEditMode && isSelected) {
@@ -449,15 +458,171 @@ fun HomeScreen(
                                         }
                                     }
 
+                                    // Size Badge and Interactive Resize Handles (for resizable widgets in Edit Mode)
+                                    if (isEditMode && isSelected && isWidget) {
+                                        // Dimension Badge at Top-Center
+                                        Box(
+                                            modifier = Modifier
+                                                .align(Alignment.TopCenter)
+                                                .offset(y = (-14).dp)
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(MaterialTheme.colorScheme.primary)
+                                                .border(1.dp, MaterialTheme.colorScheme.surface, RoundedCornerShape(10.dp))
+                                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                                                .zIndex(15f)
+                                        ) {
+                                            Text(
+                                                text = "${item.spanX} × ${item.spanY}",
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 11.sp
+                                                ),
+                                                color = MaterialTheme.colorScheme.onPrimary
+                                            )
+                                        }
+
+                                        // Right Edge Handle (Resize Width / spanX)
+                                        var rightDragDx by remember(item.id) { mutableFloatStateOf(0f) }
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier
+                                                .align(Alignment.CenterEnd)
+                                                .offset(x = 7.dp)
+                                                .size(width = 14.dp, height = 36.dp)
+                                                .clip(RoundedCornerShape(7.dp))
+                                                .background(MaterialTheme.colorScheme.primary)
+                                                .border(1.5.dp, MaterialTheme.colorScheme.surface, RoundedCornerShape(7.dp))
+                                                .zIndex(15f)
+                                                .pointerInput(item.id, item.spanX, item.col) {
+                                                    detectDragGestures(
+                                                        onDragStart = { rightDragDx = 0f },
+                                                        onDragEnd = { rightDragDx = 0f },
+                                                        onDragCancel = { rightDragDx = 0f },
+                                                        onDrag = { change, dragAmount ->
+                                                            change.consume()
+                                                            rightDragDx += dragAmount.x
+                                                            val deltaCols = (rightDragDx / cellWidthPx).toInt()
+                                                            if (deltaCols != 0) {
+                                                                val maxSpanX = settings.gridCols - item.col
+                                                                val targetSpanX = (item.spanX + deltaCols).coerceIn(1, maxSpanX)
+                                                                if (targetSpanX != item.spanX) {
+                                                                    onResizeGridItem(item.id, targetSpanX, item.spanY)
+                                                                    rightDragDx -= (targetSpanX - item.spanX) * cellWidthPx
+                                                                }
+                                                            }
+                                                        }
+                                                    )
+                                                }
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .width(2.dp)
+                                                    .height(14.dp)
+                                                    .background(MaterialTheme.colorScheme.onPrimary)
+                                            )
+                                        }
+
+                                        // Bottom Edge Handle (Resize Height / spanY)
+                                        var bottomDragDy by remember(item.id) { mutableFloatStateOf(0f) }
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier
+                                                .align(Alignment.BottomCenter)
+                                                .offset(y = 7.dp)
+                                                .size(width = 36.dp, height = 14.dp)
+                                                .clip(RoundedCornerShape(7.dp))
+                                                .background(MaterialTheme.colorScheme.primary)
+                                                .border(1.5.dp, MaterialTheme.colorScheme.surface, RoundedCornerShape(7.dp))
+                                                .zIndex(15f)
+                                                .pointerInput(item.id, item.spanY, item.row) {
+                                                    detectDragGestures(
+                                                        onDragStart = { bottomDragDy = 0f },
+                                                        onDragEnd = { bottomDragDy = 0f },
+                                                        onDragCancel = { bottomDragDy = 0f },
+                                                        onDrag = { change, dragAmount ->
+                                                            change.consume()
+                                                            bottomDragDy += dragAmount.y
+                                                            val deltaRows = (bottomDragDy / cellHeightPx).toInt()
+                                                            if (deltaRows != 0) {
+                                                                val maxSpanY = settings.gridRows - item.row
+                                                                val targetSpanY = (item.spanY + deltaRows).coerceIn(1, maxSpanY)
+                                                                if (targetSpanY != item.spanY) {
+                                                                    onResizeGridItem(item.id, item.spanX, targetSpanY)
+                                                                    bottomDragDy -= (targetSpanY - item.spanY) * cellHeightPx
+                                                                }
+                                                            }
+                                                        }
+                                                    )
+                                                }
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .width(14.dp)
+                                                    .height(2.dp)
+                                                    .background(MaterialTheme.colorScheme.onPrimary)
+                                            )
+                                        }
+
+                                        // Bottom-Right Corner Handle (Resize Both)
+                                        var cornerDx by remember(item.id) { mutableFloatStateOf(0f) }
+                                        var cornerDy by remember(item.id) { mutableFloatStateOf(0f) }
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier
+                                                .align(Alignment.BottomEnd)
+                                                .offset(x = 6.dp, y = 6.dp)
+                                                .size(24.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.primary)
+                                                .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                                .zIndex(16f)
+                                                .pointerInput(item.id, item.spanX, item.spanY, item.col, item.row) {
+                                                    detectDragGestures(
+                                                        onDragStart = { cornerDx = 0f; cornerDy = 0f },
+                                                        onDragEnd = { cornerDx = 0f; cornerDy = 0f },
+                                                        onDragCancel = { cornerDx = 0f; cornerDy = 0f },
+                                                        onDrag = { change, dragAmount ->
+                                                            change.consume()
+                                                            cornerDx += dragAmount.x
+                                                            cornerDy += dragAmount.y
+                                                            val deltaCols = (cornerDx / cellWidthPx).toInt()
+                                                            val deltaRows = (cornerDy / cellHeightPx).toInt()
+
+                                                            val maxSpanX = settings.gridCols - item.col
+                                                            val maxSpanY = settings.gridRows - item.row
+                                                            val targetSpanX = (item.spanX + deltaCols).coerceIn(1, maxSpanX)
+                                                            val targetSpanY = (item.spanY + deltaRows).coerceIn(1, maxSpanY)
+
+                                                            if (targetSpanX != item.spanX || targetSpanY != item.spanY) {
+                                                                onResizeGridItem(item.id, targetSpanX, targetSpanY)
+                                                                if (targetSpanX != item.spanX) cornerDx -= (targetSpanX - item.spanX) * cellWidthPx
+                                                                if (targetSpanY != item.spanY) cornerDy -= (targetSpanY - item.spanY) * cellHeightPx
+                                                            }
+                                                        }
+                                                    )
+                                                }
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .clip(CircleShape)
+                                                    .background(MaterialTheme.colorScheme.onPrimary)
+                                            )
+                                        }
+                                    }
+
                                     // Quick Remove button in Edit Mode
                                     if (isEditMode) {
                                         Box(
                                             contentAlignment = Alignment.Center,
                                             modifier = Modifier
                                                 .align(Alignment.TopEnd)
-                                                .size(24.dp)
+                                                .offset(x = 4.dp, y = (-4).dp)
+                                                .size(26.dp)
                                                 .clip(CircleShape)
                                                 .background(MaterialTheme.colorScheme.error)
+                                                .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                                .zIndex(16f)
                                                 .clickable { onRemoveGridItem(item.id) }
                                         ) {
                                             Icon(
@@ -520,15 +685,7 @@ fun HomeScreen(
                             ) {
                                 DropdownMenuItem(
                                     leadingIcon = { Icon(Icons.Default.Widgets, null) },
-                                    text = { Text(stringResource(R.string.add_launcher_widget)) },
-                                    onClick = {
-                                        showEmptySpaceMenu = false
-                                        showCustomWidgetPicker = true
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    leadingIcon = { Icon(Icons.Default.Add, null) },
-                                    text = { Text(stringResource(R.string.add_system_widget)) },
+                                    text = { Text(stringResource(R.string.widgets_title)) },
                                     onClick = {
                                         showEmptySpaceMenu = false
                                         onAddWidgetClick()
@@ -599,85 +756,6 @@ fun HomeScreen(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        // Custom Widget Picker Dialog
-        if (showCustomWidgetPicker) {
-            AlertDialog(
-                onDismissRequest = { showCustomWidgetPicker = false },
-                title = { Text(stringResource(R.string.add_launcher_widget)) },
-                text = {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                                .clickable {
-                                    onAddCustomWidget("weather_clock", 4, 2, pagerState.currentPage)
-                                    showCustomWidgetPicker = false
-                                }
-                                .padding(14.dp)
-                        ) {
-                            Icon(Icons.Default.Schedule, null, tint = MaterialTheme.colorScheme.primary)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(stringResource(R.string.widget_weather_clock), fontWeight = FontWeight.Bold)
-                                Text("4x2 Kachel mit Live-Wetter", style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                                .clickable {
-                                    onAddCustomWidget("battery", 4, 1, pagerState.currentPage)
-                                    showCustomWidgetPicker = false
-                                }
-                                .padding(14.dp)
-                        ) {
-                            Icon(Icons.Default.BatteryChargingFull, null, tint = MaterialTheme.colorScheme.primary)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(stringResource(R.string.widget_battery), fontWeight = FontWeight.Bold)
-                                Text("4x1 Leiste mit Prozent & Ladekreis", style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                                .clickable {
-                                    onAddCustomWidget("search_bar", 4, 1, pagerState.currentPage)
-                                    showCustomWidgetPicker = false
-                                }
-                                .padding(14.dp)
-                        ) {
-                            Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.primary)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(stringResource(R.string.widget_search_bar), fontWeight = FontWeight.Bold)
-                                Text("4x1 Google-Websuche & Spracheingabe", style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showCustomWidgetPicker = false }) {
-                        Text("Abbrechen")
-                    }
-                }
-            )
         }
     }
 }
