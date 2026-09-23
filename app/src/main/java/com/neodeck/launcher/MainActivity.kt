@@ -35,7 +35,6 @@ import com.neodeck.launcher.ui.LauncherViewModel
 import com.neodeck.launcher.ui.drawer.AppDrawer
 import com.neodeck.launcher.ui.folder.FolderDialog
 import com.neodeck.launcher.ui.home.HomeScreen
-import com.neodeck.launcher.ui.home.WallpaperBackground
 import com.neodeck.launcher.ui.settings.SettingsScreen
 import com.neodeck.launcher.ui.theme.NeoLauncherTheme
 import com.neodeck.launcher.ui.widgets.WidgetPickerSheet
@@ -119,12 +118,9 @@ class MainActivity : ComponentActivity() {
 
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = androidx.compose.ui.graphics.Color.Transparent
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
-                        // Wallpaper Layer (Built-in or System)
-                        WallpaperBackground(selectedWallpaper = settings.selectedWallpaper)
-
                         // Main Homescreen
                         HomeScreen(
                             gridItems = gridItems,

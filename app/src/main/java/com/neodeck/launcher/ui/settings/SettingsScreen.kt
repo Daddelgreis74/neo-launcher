@@ -87,7 +87,6 @@ fun SettingsScreen(
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showGridDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
-    var showWallpaperDialog by remember { mutableStateOf(false) }
     var showIconPackDialog by remember { mutableStateOf(false) }
     var showHiddenAppsDialog by remember { mutableStateOf(false) }
 
@@ -157,14 +156,17 @@ fun SettingsScreen(
                     SettingsItem(
                         icon = Icons.Default.Image,
                         title = "Hintergrundbild",
-                        subtitle = when (settings.selectedWallpaper) {
-                            "aurora" -> "Aurora Dark"
-                            "nordic" -> "Nordic Slate"
-                            "cyber" -> "Cyber Neon"
-                            "sunset" -> "Sunset Minimal"
-                            else -> "System-Hintergrund"
-                        },
-                        onClick = { showWallpaperDialog = true }
+                        subtitle = "System-Hintergrundbild (Tippen zum Ändern)",
+                        onClick = {
+                            try {
+                                val intent = Intent(Intent.ACTION_SET_WALLPAPER)
+                                context.startActivity(Intent.createChooser(intent, "Hintergrundbild wählen"))
+                            } catch (_: Exception) {
+                                try {
+                                    context.startActivity(Intent(android.provider.Settings.ACTION_WALLPAPER_SETTINGS))
+                                } catch (_: Exception) {}
+                            }
+                        }
                     )
                     SettingsItem(
                         icon = Icons.Default.Apps,
@@ -314,51 +316,6 @@ fun SettingsScreen(
         }
     }
 
-    // Wallpaper Dialog
-    if (showWallpaperDialog) {
-        val wallpapers = listOf(
-            "aurora" to "Aurora Dark (Neon Waves)",
-            "nordic" to "Nordic Slate (Graphite Minimal)",
-            "cyber" to "Cyber Neon (Violet & Blue)",
-            "sunset" to "Sunset Minimal (Amber Horizon)",
-            "system" to "System-Hintergrund"
-        )
-        AlertDialog(
-            onDismissRequest = { showWallpaperDialog = false },
-            title = { Text("Hintergrundbild wählen") },
-            text = {
-                Column {
-                    wallpapers.forEach { (key, name) ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onUpdateWallpaper(key)
-                                    showWallpaperDialog = false
-                                }
-                                .padding(vertical = 8.dp)
-                        ) {
-                            RadioButton(
-                                selected = settings.selectedWallpaper == key,
-                                onClick = {
-                                    onUpdateWallpaper(key)
-                                    showWallpaperDialog = false
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = name, style = MaterialTheme.typography.bodyLarge)
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showWallpaperDialog = false }) {
-                    Text("OK")
-                }
-            }
-        )
-    }
 
     // Icon Pack Dialog
     if (showIconPackDialog) {

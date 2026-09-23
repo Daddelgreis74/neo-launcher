@@ -220,68 +220,10 @@ fun WidgetPickerSheet(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Section 1: Neo Launcher Built-in Widgets
-                if (searchQuery.isEmpty() || "uhr wetter akku suche neo".contains(searchQuery.lowercase())) {
-                    item {
-                        Text(
-                            text = "Neo Launcher Widgets",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-                    }
-
-                    item {
-                        BuiltInWidgetCard(
-                            icon = Icons.Default.Schedule,
-                            title = stringResource(R.string.widget_weather_clock),
-                            description = "Live-Uhrzeit, Datum & Open-Meteo Wetter",
-                            spanBadge = "4 × 2",
-                            onClick = {
-                                onSelectCustomWidget("weather_clock", 4, 2)
-                                onDismiss()
-                            }
-                        )
-                    }
-
-                    item {
-                        BuiltInWidgetCard(
-                            icon = Icons.Default.BatteryChargingFull,
-                            title = stringResource(R.string.widget_battery),
-                            description = "Akkustand, Ladestatus & Schnellzugriff",
-                            spanBadge = "4 × 1",
-                            onClick = {
-                                onSelectCustomWidget("battery", 4, 1)
-                                onDismiss()
-                            }
-                        )
-                    }
-
-                    item {
-                        BuiltInWidgetCard(
-                            icon = Icons.Default.Search,
-                            title = stringResource(R.string.widget_search_bar),
-                            description = "Google-Websuche & Spracheingabe",
-                            spanBadge = "4 × 1",
-                            onClick = {
-                                onSelectCustomWidget("search_bar", 4, 1)
-                                onDismiss()
-                            }
-                        )
-                    }
-
-                    item {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 8.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
-                    }
-                }
-
-                // Section 2: Installed System Widgets
+                // Section 1: Installed Android System & App Widgets
                 item {
                     Text(
-                        text = "System Widgets",
+                        text = "Android System- & App-Widgets",
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(vertical = 4.dp)
@@ -332,6 +274,64 @@ fun WidgetPickerSheet(
                             },
                             onSelectWidget = { info ->
                                 onSelectSystemWidget(info)
+                                onDismiss()
+                            }
+                        )
+                    }
+                }
+
+                // Section 2: Neo Launcher Built-in Widgets
+                if (searchQuery.isEmpty() || "uhr wetter akku suche neo".contains(searchQuery.lowercase())) {
+                    item {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        )
+                    }
+
+                    item {
+                        Text(
+                            text = "Integrierte Neo Launcher Widgets",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+
+                    item {
+                        BuiltInWidgetCard(
+                            icon = Icons.Default.Schedule,
+                            title = stringResource(R.string.widget_weather_clock),
+                            description = "Live-Uhrzeit, Datum & Open-Meteo Wetter",
+                            spanBadge = "4 × 2",
+                            onClick = {
+                                onSelectCustomWidget("weather_clock", 4, 2)
+                                onDismiss()
+                            }
+                        )
+                    }
+
+                    item {
+                        BuiltInWidgetCard(
+                            icon = Icons.Default.BatteryChargingFull,
+                            title = stringResource(R.string.widget_battery),
+                            description = "Akkustand, Ladestatus & Schnellzugriff",
+                            spanBadge = "4 × 1",
+                            onClick = {
+                                onSelectCustomWidget("battery", 4, 1)
+                                onDismiss()
+                            }
+                        )
+                    }
+
+                    item {
+                        BuiltInWidgetCard(
+                            icon = Icons.Default.Search,
+                            title = stringResource(R.string.widget_search_bar),
+                            description = "Google-Websuche & Spracheingabe",
+                            spanBadge = "4 × 1",
+                            onClick = {
+                                onSelectCustomWidget("search_bar", 4, 1)
                                 onDismiss()
                             }
                         )

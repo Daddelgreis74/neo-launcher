@@ -85,7 +85,7 @@ fun AppDrawer(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
             .safeDrawingPadding()
     ) {
         Column(
