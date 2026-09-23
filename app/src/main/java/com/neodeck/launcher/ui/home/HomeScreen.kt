@@ -158,7 +158,7 @@ fun HomeScreen(
         ) {
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Header Bar: SmartBar or Edit Mode Action Bar
+            // Header Bar: Edit Mode Action Bar only
             if (isEditMode) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -206,16 +206,8 @@ fun HomeScreen(
                         }
                     }
                 }
-            } else {
-                // At-a-Glance Smart Bar
-                SmartBar(
-                    onSearchClick = onOpenDrawer,
-                    onSettingsClick = onOpenSettings,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Spacer(modifier = Modifier.height(8.dp))
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             // Workspace Grid with Horizontal Pager
             BoxWithConstraints(

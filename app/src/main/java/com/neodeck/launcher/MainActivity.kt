@@ -162,6 +162,10 @@ class MainActivity : ComponentActivity() {
                                 onAppClick = { app -> viewModel.launchApp(app) },
                                 onAddToHome = { app -> viewModel.addAppToHome(app) },
                                 onHideApp = { app -> viewModel.hideApp(app) },
+                                onOpenSettings = {
+                                    viewModel.closeDrawer()
+                                    viewModel.openSettings()
+                                },
                                 onClose = { viewModel.closeDrawer() },
                                 iconPackPackage = settings.iconPackPackage
                             )

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -69,6 +70,7 @@ fun AppDrawer(
     onAppClick: (AppItem) -> Unit,
     onAddToHome: (AppItem) -> Unit,
     onHideApp: (AppItem) -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     onClose: () -> Unit,
     iconPackPackage: String? = null,
     modifier: Modifier = Modifier
@@ -111,11 +113,23 @@ fun AppDrawer(
                     )
                 },
                 trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { onSearchQueryChange("") }) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(end = 4.dp)
+                    ) {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { onSearchQueryChange("") }) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Clear",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        IconButton(onClick = onOpenSettings) {
                             Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = "Clear",
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = stringResource(R.string.launcher_settings),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }

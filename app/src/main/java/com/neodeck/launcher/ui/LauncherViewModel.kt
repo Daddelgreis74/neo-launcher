@@ -155,6 +155,12 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun launchApp(app: AppItem) {
         triggerHapticClick()
+        if (app.packageName == "com.neodeck.launcher.settings") {
+            closeDrawer()
+            closeFolder()
+            openSettings()
+            return
+        }
         appRepository.launchApp(app)
         closeDrawer()
         closeFolder()

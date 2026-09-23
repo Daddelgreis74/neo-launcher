@@ -85,6 +85,20 @@ class AppRepository(
                 }
             }
 
+            // Add Neo Launcher Settings item
+            val settingsLabel = try {
+                context.getString(com.neodeck.launcher.R.string.launcher_settings)
+            } catch (_: Exception) {
+                "Einstellungen"
+            }
+            appList.add(
+                AppItem(
+                    label = "Neo Launcher ($settingsLabel)",
+                    packageName = "com.neodeck.launcher.settings",
+                    activityName = "SettingsActivity"
+                )
+            )
+
             // Sort alphabetically by label
             val sortedList = appList.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.label })
             _apps.value = sortedList
@@ -100,6 +114,22 @@ class AppRepository(
     fun getAppIcon(app: AppItem): Drawable? {
         val cacheKey = "${app.packageName}/${app.activityName}/${app.userHandle?.hashCode() ?: 0}/${iconPackManager.currentPackPackage}"
         iconCache[cacheKey]?.let { return it }
+
+        if (app.packageName == "com.neodeck.launcher.settings") {
+            val baseDrawable = try {
+                context.packageManager.getApplicationIcon(context.packageName)
+            } catch (_: Exception) {
+                null
+            } ?: return null
+
+            val finalDrawable = if (iconPackManager.isBuiltinPack()) {
+                iconPackManager.transformIcon(baseDrawable)
+            } else {
+                baseDrawable
+            }
+            iconCache[cacheKey] = finalDrawable
+            return finalDrawable
+        }
 
         // Check active third-party icon pack first
         if (!iconPackManager.isBuiltinPack()) {
