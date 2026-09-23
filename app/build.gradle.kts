@@ -15,9 +15,22 @@ android {
         versionName = "1.0.1"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("keystore/neo_launcher.jks")
+            storePassword = "androidneodeck"
+            keyAlias = "neolauncher"
+            keyPassword = "androidneodeck"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("release")
+        }
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
